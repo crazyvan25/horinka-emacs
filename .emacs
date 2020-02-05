@@ -1,9 +1,6 @@
 (setq user-full-name "Horia Ivan"
       user-mail-address "horia.ivan@bbc.co.uk")
 
-(setq gc-cons-threshold 100000000)
-(setq large-file-warning-threshold 100000000)
-
 (setq default-frame-alist '((width . 200) (height . 65)))
 
 (desktop-save-mode 1)
@@ -16,8 +13,34 @@
 (add-to-list 'package-archives '("gnu" . "http://elpa.gnu.org/packages/"))
 (package-initialize)
 
+(unless (package-installed-p 'use-package)
+  (package-refresh-contents)
+  (package-install 'use-package))
+
 (eval-when-compile
   (require 'use-package))
+
+(require 'use-package-ensure)
+(setq use-package-always-ensure t)
+
+;; GC tuning
+(defmacro k-time (&rest body)
+  "Measure and return the time it takes evaluating BODY."
+  `(let ((time (current-time)))
+     ,@body
+     (float-time (time-since time))))
+
+;; When idle for 30sec run the GC no matter what.
+(defvar k-gc-timer
+  (run-with-idle-timer 30 t
+                       (lambda ()
+                         (message "Garbage Collector has run for %.06fsec"
+                                  (k-time (garbage-collect))))))
+
+;; Set garbage collection threshold to 1GB.
+(setq gc-cons-threshold #x40000000)
+;; Set garbage collection to 20% of heap
+(setq gc-cons-percentage 0.2)
 
 (menu-bar-mode -1)
 (toggle-scroll-bar -1)
@@ -30,17 +53,16 @@
 (size-indication-mode t)
 (fset 'yes-or-no-p 'y-or-n-p)
 (setq inhibit-startup-screen t)
+(setq initial-scratch-message nil)
 
 (use-package grandshell-theme
   :ensure t
   :config
   (load-theme 'grandshell t))
 
-(use-package smart-mode-line-powerline-theme
-  :ensure t)
+(use-package smart-mode-line-powerline-theme)
 
 (use-package smart-mode-line
-  :ensure t
   :config
   (setq sml/theme 'powerline)
   (add-hook 'after-init-hook 'sml/setup))
@@ -69,11 +91,9 @@
 (global-set-key (kbd "C-x k") 'kill-this-buffer)
 (add-hook 'before-save-hook 'whitespace-cleanup)
 
-(use-package diminish
-  :ensure t)
+(use-package diminish)
 
 (use-package smartparens
-  :ensure t
   :diminish smartparens-mode
   :config
   (progn
@@ -81,25 +101,25 @@
     (smartparens-global-mode 1)
     (show-paren-mode t)))
 
+(use-package paredit
+  :config
+  (add-hook 'emacs-lisp-mode-hook 'paredit-mode))
+
 (use-package expand-region
-  :ensure t
   :bind ("M-m" . er/expand-region))
 
 (use-package which-key
-  :ensure t
   :diminish which-key-mode
   :config
   (which-key-mode +1))
 
 (use-package avy
-  :ensure t
   :bind
   ("C-=" . avy-goto-char)
   :config
   (setq avy-background t))
 
 (use-package crux
-  :ensure t
   :bind
   ("C-k" . crux-smart-kill-line)
   ("C-c n" . crux-cleanup-buffer-or-region)
@@ -107,11 +127,9 @@
   ("C-a" . crux-move-beginning-of-line))
 
 (use-package magit
-  :ensure t
   :bind (("C-M-g" . magit-status)))
 
 (use-package projectile
-  :ensure t
   :diminish projectile-mode
   :bind
   (("C-c p f" . helm-projectile-find-file)
@@ -121,19 +139,16 @@
   (projectile-mode +1))
 
 (use-package company
-  :ensure t
   :diminish company-mode
   :config
   (add-hook 'after-init-hook #'global-company-mode))
 
 (use-package flycheck
-  :ensure t
   :diminish flycheck-mode
   :config
   (add-hook 'after-init-hook #'global-flycheck-mode))
 
 (use-package helm
-  :ensure t
   :defer 2
   :diminish helm-mode
   :bind
@@ -154,22 +169,14 @@
   (define-key helm-map (kbd "C-z")  'helm-select-action))
 
 (use-package helm-projectile
-  :ensure t
   :config
   (helm-projectile-on))
 
 (use-package yasnippet
-  :ensure t
   :config
   (yas-global-mode 1))
 
-(use-package minimap
-  :ensure t
-  :commands
-  minimap-mode)
-
 (use-package multiple-cursors
-  :ensure t
   :bind
   ("C->" . mc/mark-next-like-this)
   ("C-<" . mc/mark-previous-like-this)
@@ -177,8 +184,20 @@
   ("C-S-<mouse-1>" . mc/add-cursor-on-click))
 
 (use-package fill-column-indicator
-  :ensure t
   :config
-  (add-hook 'dockerfile-mode-hook #'fci-mode)
-  (add-hook 'java-mode-hook #'fci-mode)
+  (add-hook 'prog-mode-hook #'fci-mode)
   (setq fci-rule-column 80))
+
+(use-package aggressive-indent
+  :config
+  (add-hook 'prog-mode-hook #'aggressive-indent-mode))
+
+(use-package rainbow-delimiters
+  :config
+  (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
+
+(use-package highlight-symbol
+  :config
+  (add-hook 'prog-mode-hook 'highlight-symbol-mode))
+
+(use-package dockerfile-mode)
