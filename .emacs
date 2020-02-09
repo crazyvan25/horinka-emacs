@@ -5,7 +5,8 @@
 
 (desktop-save-mode 1)
 
-(setq doc-view-resolution 288)
+(setq visible-bell nil)
+(setq ring-bell-function 'ignore)
 
 (require 'package)
 (setq package-enable-at-startup nil)
@@ -42,6 +43,11 @@
 ;; Set garbage collection to 20% of heap
 (setq gc-cons-percentage 0.2)
 
+;; Soft line/word wrap
+(set-default 'truncate-lines t)
+(setq-default word-wrap t)
+(global-visual-line-mode t)
+
 (menu-bar-mode -1)
 (toggle-scroll-bar -1)
 (tool-bar-mode -1)
@@ -55,26 +61,39 @@
 (setq inhibit-startup-screen t)
 (setq initial-scratch-message nil)
 
+;; Hash key on Mac
+(define-key key-translation-map (kbd "M-3") (kbd "#"))
+
 (use-package grandshell-theme
   :ensure t
   :config
   (load-theme 'grandshell t))
 
-(use-package smart-mode-line-powerline-theme)
-
 (use-package smart-mode-line
   :config
-  (setq sml/theme 'powerline)
   (add-hook 'after-init-hook 'sml/setup))
+
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+
+;; Move point when splitting
+(defadvice split-window (after move-point-to-new-window activate)
+  "Moves the point to the newly created window after splitting."
+  (other-window 1))
+
+;; TAB
+(setq-default indent-tabs-mode nil) ;; disable tab indent
+(setq-default tab-width 2)
+(add-hook 'java-mode-hook (lambda () (setq c-basic-offset 2)))
 
 (setq frame-title-format
       '((:eval (if (buffer-file-name)
-       (abbreviate-file-name (buffer-file-name))
-       "%b"))))
+                   (abbreviate-file-name (buffer-file-name))
+                 "%b"))))
 (setq scroll-margin 0
       scroll-conservatively 100000
       scroll-preserve-screen-position 1)
-(set-frame-font "Menlo 12" nil t)
+
+(set-frame-font "Menlo 12")
 
 (setq backup-directory-alist
       `((".*" . ,temporary-file-directory)))
@@ -86,8 +105,6 @@
 (set-default-coding-systems 'utf-8)
 (set-terminal-coding-system 'utf-8)
 (set-keyboard-coding-system 'utf-8)
-(setq-default tab-width 2
-              indent-tabs-mode nil)
 (global-set-key (kbd "C-x k") 'kill-this-buffer)
 (add-hook 'before-save-hook 'whitespace-cleanup)
 
@@ -160,7 +177,7 @@
   (require 'helm-config)
   (helm-mode 1)
   (setq helm-split-window-inside-p t
-    helm-move-to-line-cycle-in-source t)
+        helm-move-to-line-cycle-in-source t)
   (setq helm-autoresize-max-height 0)
   (setq helm-autoresize-min-height 20)
   (helm-autoresize-mode 1)
@@ -196,8 +213,79 @@
   :config
   (add-hook 'prog-mode-hook #'rainbow-delimiters-mode))
 
+(use-package highlight-parentheses
+  :config
+  (add-hook 'after-init-hook #'global-highlight-parentheses-mode))
+
 (use-package highlight-symbol
+  :bind
+  (("C-<f2>" . highlight-symbol)
+   ("<f2>" . highlight-symbol-next)
+   ("S-<f2>" . highlight-symbol-prev)
+   ("M-<f2>" . highlight-symbol-query-replace))
   :config
   (add-hook 'prog-mode-hook 'highlight-symbol-mode))
 
 (use-package dockerfile-mode)
+
+(use-package json-mode)
+
+(use-package yaml-mode)
+
+(use-package groovy-mode)
+
+(use-package beacon
+  :config
+  (beacon-mode 1))
+
+(use-package ace-popup-menu
+  :config
+  (ace-popup-menu-mode 1))
+
+(use-package dashboard
+  :ensure t
+  :config
+  (dashboard-setup-startup-hook))
+
+(use-package god-mode
+  :config
+  (global-set-key (kbd "<escape>") 'god-local-mode))
+
+(use-package windmove
+  :ensure nil
+  :commands (windmove-up crosshairs)
+  :init
+  (defmacro defwindmove (name fn)
+    `(defun ,name ()
+       (interactive)
+       (ignore-errors
+         (,fn)
+         (crosshairs-flash))))
+  (defwindmove windowmove-left windmove-left)
+  (defwindmove windowmove-right windmove-right)
+  (defwindmove windowmove-up windmove-up)
+  (defwindmove windowmove-down windmove-down)
+  :bind
+  (("S-<left>"  .  windowmove-left)
+   ("S-<right>" .  windowmove-right)
+   ("S-<up>"    .  windowmove-up)
+   ("S-<down>"  .  windowmove-down)))
+
+(use-package dimmer
+  :config
+  (dimmer-activate))
+
+(use-package color-identifiers-mode
+  :config
+  (add-hook 'after-init-hook 'global-color-identifiers-mode))
+
+(use-package goto-line-preview
+  :bind
+  ("C-c g" . goto-line-preview))
+
+(use-package smart-hungry-delete
+  :bind
+  (("<backspace>" . smart-hungry-delete-backward-char)
+   ("C-d" . smart-hungry-delete-forward-char))
+  :defer nil
+  :config (smart-hungry-delete-add-default-hooks))
