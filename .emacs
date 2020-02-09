@@ -24,6 +24,12 @@
 (require 'use-package-ensure)
 (setq use-package-always-ensure t)
 
+(use-package auto-package-update
+  :config
+  (setq auto-package-update-delete-old-versions t)
+  (setq auto-package-update-hide-results t)
+  (auto-package-update-maybe))
+
 ;; GC tuning
 (defmacro k-time (&rest body)
   "Measure and return the time it takes evaluating BODY."
@@ -72,8 +78,6 @@
 (use-package smart-mode-line
   :config
   (add-hook 'after-init-hook 'sml/setup))
-
-(add-hook 'before-save-hook 'delete-trailing-whitespace)
 
 ;; Move point when splitting
 (defadvice split-window (after move-point-to-new-window activate)
@@ -289,3 +293,40 @@
    ("C-d" . smart-hungry-delete-forward-char))
   :defer nil
   :config (smart-hungry-delete-add-default-hooks))
+
+(use-package all-the-icons)
+
+(use-package nyan-mode
+  :if window-system
+  :config
+  (nyan-mode)
+  (nyan-start-animation))
+
+(use-package move-text
+  :bind
+  (([(meta shift up)] . move-text-up)
+   ([(meta shift down)] . move-text-down)))
+
+(use-package whitespace-cleanup-mode
+  :defer 5
+  :diminish
+  :config
+  (global-whitespace-cleanup-mode 1))
+
+(use-package indent-guide
+  :defer 5
+  :config
+  (indent-guide-global-mode 1))
+
+;; Whitespace
+(setq show-trailing-whitespace t)
+(use-package ws-butler
+  :diminish ws-butler-mode
+  :init
+  (add-hook 'prog-mode-hook #'ws-butler-mode)
+  (add-hook 'org-mode-hook #'ws-butler-mode)
+  (add-hook 'text-mode-hook #'ws-butler-mode)
+  (add-hook 'proof-mode-hook #'ws-butler-mode)
+  (add-hook 'bibtex-mode-hook #'ws-butler-mode)
+  :config
+  (setq ws-butler-convert-leading-tabs-or-spaces t))
