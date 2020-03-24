@@ -30,25 +30,6 @@
   (setq auto-package-update-hide-results t)
   (auto-package-update-maybe))
 
-;; GC tuning
-(defmacro k-time (&rest body)
-  "Measure and return the time it takes evaluating BODY."
-  `(let ((time (current-time)))
-     ,@body
-     (float-time (time-since time))))
-
-;; When idle for 30sec run the GC no matter what.
-(defvar k-gc-timer
-  (run-with-idle-timer 30 t
-                       (lambda ()
-                         (message "Garbage Collector has run for %.06fsec"
-                                  (k-time (garbage-collect))))))
-
-;; Set garbage collection threshold to 1GB.
-(setq gc-cons-threshold #x40000000)
-;; Set garbage collection to 20% of heap
-(setq gc-cons-percentage 0.2)
-
 ;; Soft line/word wrap
 (set-default 'truncate-lines t)
 (setq-default word-wrap t)
@@ -56,6 +37,7 @@
 
 (menu-bar-mode -1)
 (toggle-scroll-bar -1)
+(scroll-bar-mode -1)
 (tool-bar-mode -1)
 (global-hl-line-mode +1)
 (blink-cursor-mode -1)
@@ -70,10 +52,10 @@
 ;; Hash key on Mac
 (define-key key-translation-map (kbd "M-3") (kbd "#"))
 
-(use-package grandshell-theme
+(use-package gcmh
   :ensure t
-  :config
-  (load-theme 'grandshell t))
+  :init
+  (gcmh-mode 1))
 
 (use-package smart-mode-line
   :config
@@ -88,6 +70,7 @@
 (setq-default indent-tabs-mode nil) ;; disable tab indent
 (setq-default tab-width 2)
 (add-hook 'java-mode-hook (lambda () (setq c-basic-offset 2)))
+(setq js-indent-level 2)
 
 (setq frame-title-format
       '((:eval (if (buffer-file-name)
@@ -97,7 +80,7 @@
       scroll-conservatively 100000
       scroll-preserve-screen-position 1)
 
-(set-frame-font "Menlo 12")
+(set-frame-font "Fira Code 12")
 
 (setq backup-directory-alist
       `((".*" . ,temporary-file-directory)))
@@ -294,6 +277,11 @@
   :defer nil
   :config (smart-hungry-delete-add-default-hooks))
 
+(use-package nv-delete-back
+  :bind
+  (("C-<backspace>" . nv-delete-back-all)
+   ("M-<backspace>" . nv-delete-back)))
+
 (use-package all-the-icons)
 
 (use-package nyan-mode
@@ -330,3 +318,7 @@
   (add-hook 'bibtex-mode-hook #'ws-butler-mode)
   :config
   (setq ws-butler-convert-leading-tabs-or-spaces t))
+
+(use-package naysayer-theme
+  :config
+  (load-theme 'naysayer t))
